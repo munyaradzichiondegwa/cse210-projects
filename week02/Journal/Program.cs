@@ -6,124 +6,227 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
-// Prompt Generator Class - Provides unique, randomized prompts
-public class PromptGenerator
+// Utility Class for Secure Operations
+public static class SecurityUtils
 {
-    private static readonly string[] _defaultPrompts = new[]
+    // Generate a secure salt
+    public static string GenerateSalt()
     {
-        "Who was the most interesting person I interacted with today?",
-        "What was the best part of my day?",
-        "How did I see the hand of the Lord in my life today?",
-        "What was the strongest emotion I felt today?",
-        "If I had one thing I could do over today, what would it be?",
-        "What am I grateful for today?",
-        "What challenge did I overcome today?",
-        "What made me smile today?",
-        "What did I learn about myself today?",
-        "What goal am I working towards?"
-    };
+        byte[] saltBytes = new byte[16];
+        RandomNumberGenerator.Fill(saltBytes);
+        return Convert.ToBase64String(saltBytes);
+    }
 
-    private List<string> _usedPrompts = new List<string>();
-    private Random _random = new Random();
-
-    public string GetRandomPrompt()
+    // Hash password with salt
+    public static string HashPassword(string password, string salt)
     {
-        // If all prompts have been used, reset the list
-        if (_usedPrompts.Count >= _defaultPrompts.Length)
+        using (var pbkdf2 = new Rfc2898DeriveBytes(
+            password,
+            Convert.FromBase64String(salt),
+            iterations: 10000,
+            HashAlgorithmName.SHA256))
         {
-            _usedPrompts.Clear();
+            byte[] hash = pbkdf2.GetBytes(20);
+            return Convert.ToBase64String(hash);
         }
-
-        // Find an unused prompt
-        string prompt;
-        do
-        {
-            prompt = _defaultPrompts[_random.Next(_defaultPrompts.Length)];
-        } while (_usedPrompts.Contains(prompt));
-
-        _usedPrompts.Add(prompt);
-        return prompt;
     }
 }
 
-// Entry Class - Represents a single journal entry
-public class JournalEntry
+// User Model
+public class User
 {
-    public string Date { get; }
-    public string Prompt { get; }
-    public string Response { get; }
-    public int Mood { get; }  // Added mood rating
-    public List<string> Tags { get; }  // Added tags for categorization
+    public string Username { get; set; }
+    public string PasswordHash { get; set; }
+    public string Salt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
 
-    public JournalEntry(string prompt, string response, int mood = 5, List<string> tags = null)
+// User Repository for Managing User Data
+public class UserRepository
+{
+    private const string USER_FILE = "users.json";
+    private List<User> _users;
+
+    public UserRepository()
     {
-        Date = DateTime.Now.ToString("yyyy-MM-dd");
-        Prompt = prompt;
-        Response = response;
-        Mood = Math.Clamp(mood, 1, 10);  // Mood rating from 1-10
-        Tags = tags ?? new List<string>();
+        LoadUsers();
     }
 
-    // Enhanced display method
+    private void LoadUsers()
+    {
+        if (File.Exists(USER_FILE))
+        {
+            try
+            {
+                string jsonContent = File.ReadAllText(USER_FILE);
+                _users = JsonSerializer.Deserialize<List<User>>(jsonContent)
+                         ?? new List<User>();
+            }
+            catch
+            {
+                _users = new List<User>();
+            }
+        }
+        else
+        {
+            _users = new List<User>();
+        }
+    }
+
+    private void SaveUsers()
+    {
+        string jsonContent = JsonSerializer.Serialize(_users,
+            new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(USER_FILE, jsonContent);
+    }
+
+    public bool RegisterUser(string username, string password)
+    {
+        // Check if username already exists
+        if (_users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        // Create new user
+        string salt = SecurityUtils.GenerateSalt();
+        var newUser = new User
+        {
+            Username = username,
+            Salt = salt,
+            PasswordHash = SecurityUtils.HashPassword(password, salt),
+            CreatedAt = DateTime.Now
+        };
+
+        _users.Add(newUser);
+        SaveUsers();
+        return true;
+    }
+
+    public bool ValidateUser(string username, string password)
+    {
+        var user = _users.FirstOrDefault(u =>
+            u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+
+        if (user == null) return false;
+
+        // Verify password
+        string hashedPassword = SecurityUtils.HashPassword(password, user.Salt);
+        return hashedPassword == user.PasswordHash;
+    }
+}
+
+// Journal Entry Model
+public class JournalEntry
+{
+    public string Date { get; set; }
+    public string Prompt { get; set; }
+    public string Content { get; set; }
+    public int Mood { get; set; }
+    public List<string> Tags { get; set; }
+
+    public JournalEntry()
+    {
+        Date = DateTime.Now.ToString("yyyy-MM-dd");
+        Tags = new List<string>();
+    }
+
     public void Display()
     {
         Console.WriteLine($"Date: {Date}");
         Console.WriteLine($"Prompt: {Prompt}");
-        Console.WriteLine($"Response: {Response}");
-        Console.WriteLine($"Mood Rating: {Mood}/10");
-        Console.WriteLine($"Tags: {(Tags.Any() ? string.Join(", ", Tags) : "No tags")}");
+        Console.WriteLine($"Entry: {Content}");
+        Console.WriteLine($"Mood: {new string('❤', Mood)}{new string('♡', 10 - Mood)}");
+        Console.WriteLine($"Tags: {string.Join(", ", Tags)}");
         Console.WriteLine(new string('-', 50));
-    }
-
-    // Method to convert entry to CSV format
-    public string ToCSV()
-    {
-        // Escape commas in the response and prompt
-        string escapedPrompt = Prompt.Replace(",", "~");
-        string escapedResponse = Response.Replace(",", "~");
-        string escapedTags = string.Join(";", Tags).Replace(",", "~");
-
-        return $"{Date},{escapedPrompt},{escapedResponse},{Mood},{escapedTags}";
-    }
-
-    // Static method to parse CSV back to JournalEntry
-    public static JournalEntry FromCSV(string csvLine)
-    {
-        var parts = csvLine.Split(',');
-        if (parts.Length < 5) throw new ArgumentException("Invalid CSV format");
-
-        // Unescape commas
-        string prompt = parts[1].Replace("~", ",");
-        string response = parts[2].Replace("~", ",");
-        int mood = int.Parse(parts[3]);
-        List<string> tags = parts[4].Split(';', StringSplitOptions.RemoveEmptyEntries)
-                                     .Select(t => t.Replace("~", ","))
-                                     .ToList();
-
-        return new JournalEntry(prompt, response, mood, tags);
     }
 }
 
-// Journal Class - Manages collection of journal entries
-public class Journal
+// Prompt Generator
+public class PromptGenerator
+{
+    private static readonly string[] _prompts = new[]
+    {
+        "What was the most meaningful moment of your day?",
+        "What are you grateful for today?",
+        "What challenged you today?",
+        "What made you smile today?",
+        "What did you learn about yourself today?",
+        "What are your hopes for tomorrow?",
+        "What emotion are you feeling most strongly right now?",
+        "Describe a conversation that impacted you today.",
+        "What personal growth are you experiencing?",
+        "What would you like to improve about yourself?"
+    };
+
+    private Random _random = new Random();
+
+    public string GetRandomPrompt()
+    {
+        return _prompts[_random.Next(_prompts.Length)];
+    }
+}
+
+// Journal Management Class
+public class JournalManager
 {
     private List<JournalEntry> _entries = new List<JournalEntry>();
     private PromptGenerator _promptGenerator = new PromptGenerator();
+    private string _username;
 
-    public string GetRandomPrompt() => _promptGenerator.GetRandomPrompt();
-
-    public void AddEntry(string response, int mood = 5, List<string> tags = null)
+    public JournalManager(string username)
     {
-        string prompt = GetRandomPrompt();
-        var entry = new JournalEntry(prompt, response, mood, tags);
+        _username = username;
+    }
+
+    public JournalEntry CreateNewEntry()
+    {
+        string prompt = _promptGenerator.GetRandomPrompt();
+
+        Console.WriteLine($"Prompt: {prompt}");
+
+        JournalEntry entry = new JournalEntry
+        {
+            Prompt = prompt
+        };
+
+        Console.Write("Your response: ");
+        entry.Content = Console.ReadLine();
+
+        // Mood input
+        while (true)
+        {
+            Console.Write("How was your mood today? (1-10): ");
+            if (int.TryParse(Console.ReadLine(), out int mood) && mood >= 1 && mood <= 10)
+            {
+                entry.Mood = mood;
+                break;
+            }
+            Console.WriteLine("Please enter a valid mood between 1 and 10.");
+        }
+
+        // Tags input
+        Console.Write("Add tags (comma-separated): ");
+        string tagInput = Console.ReadLine();
+        entry.Tags = tagInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                              .Select(t => t.Trim())
+                              .ToList();
+
+        return entry;
+    }
+
+    public void AddEntry(JournalEntry entry)
+    {
         _entries.Add(entry);
     }
 
     public void DisplayEntries()
     {
-        if (!_entries.Any())
+        if (_entries.Count == 0)
         {
             Console.WriteLine("No entries found.");
             return;
@@ -139,8 +242,10 @@ public class Journal
     {
         try
         {
-            File.WriteAllLines(filename, _entries.Select(e => e.ToCSV()));
-            Console.WriteLine($"Journal saved to {filename}");
+            string json = JsonSerializer.Serialize(_entries,
+                new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText($"{_username}_{filename}", json);
+            Console.WriteLine($"Journal saved successfully to {filename}");
         }
         catch (Exception ex)
         {
@@ -152,10 +257,9 @@ public class Journal
     {
         try
         {
-            var lines = File.ReadAllLines(filename);
-            _entries.Clear();
-            _entries.AddRange(lines.Select(JournalEntry.FromCSV));
-            Console.WriteLine($"Journal loaded from {filename}");
+            string json = File.ReadAllText($"{_username}_{filename}");
+            _entries = JsonSerializer.Deserialize<List<JournalEntry>>(json);
+            Console.WriteLine($"Journal loaded successfully from {filename}");
         }
         catch (Exception ex)
         {
@@ -163,141 +267,205 @@ public class Journal
         }
     }
 
-    public void ExportToJson(string filename)
-    {
-        var json = JsonSerializer.Serialize(_entries, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(filename, json);
-        Console.WriteLine($"Journal exported to {filename}");
-    }
-
     public void SearchEntries(string keyword)
     {
-        var results = _entries.Where(e => 
-            e.Prompt.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-            e.Response.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+        var results = _entries.Where(e =>
+            e.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
             e.Tags.Any(t => t.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
             .ToList();
 
-        if (results.Any())
+        if (results.Count == 0)
         {
-            Console.WriteLine("Matching Entries:");
-            results.ForEach(e => e.Display());
+            Console.WriteLine("No entries found.");
+            return;
         }
-        else
+
+        Console.WriteLine("Matching Entries:");
+        foreach (var entry in results)
         {
-            Console.WriteLine("No matching entries found.");
+            entry.Display();
         }
     }
-
-    public int GetEntryCount() => _entries.Count;
 }
 
-// Main Program Class
-class Program
+// Main Application Class
+public class JournalApplication
 {
-    static void Main(string[] args)
-    {
-        Journal journal = new Journal();
+    private UserRepository _userRepository;
+    private JournalManager _journalManager;
 
+    public JournalApplication()
+    {
+        _userRepository = new UserRepository();
+    }
+
+    public void Run()
+    {
         while (true)
         {
-            DisplayMenu();
+            DisplayMainMenu();
             string choice = Console.ReadLine();
 
             switch (choice)
             {
                 case "1":
-                    AddNewEntry(journal);
+                    Login();
                     break;
                 case "2":
-                    journal.DisplayEntries();
+                    Register();
                     break;
                 case "3":
-                    SaveJournal(journal);
-                    break;
-                case "4":
-                    LoadJournal(journal);
-                    break;
-                case "5":
-                    SearchJournal(journal);
-                    break;
-                case "6":
-                    ExportJournalToJson(journal);
-                    break;
-                case "7":
-                    Console.WriteLine("Thank you for journaling today!");
+                    Console.WriteLine("Goodbye!");
                     return;
                 default:
                     Console.WriteLine("Invalid option. Please try again.");
                     break;
             }
+
+            // Journal menu after successful login
+            if (_journalManager != null)
+            {
+                RunJournalMenu();
+            }
         }
     }
 
-    static void DisplayMenu()
+    private void DisplayMainMenu()
     {
-        Console.WriteLine("\n--- Personal Journal ---");
-        Console.WriteLine("1. Write a New Entry");
-        Console.WriteLine("2. Display All Entries");
-        Console.WriteLine("3. Save Journal");
-        Console.WriteLine("4. Load Journal");
-        Console.WriteLine("5. Search Entries");
-        Console.WriteLine("6. Export to JSON");
-        Console.WriteLine("7. Exit");
+        Console.Clear();
+        Console.WriteLine("--- Personal Journal Application ---");
+        Console.WriteLine("1. Login");
+        Console.WriteLine("2. Register");
+        Console.WriteLine("3. Exit");
         Console.Write("Choose an option: ");
     }
 
-    static void AddNewEntry(Journal journal)
+    private void Login()
     {
-        string prompt = journal.GetRandomPrompt();
-        Console.WriteLine($"Prompt: {prompt}");
+        Console.Write("Username: ");
+        string username = Console.ReadLine();
+        Console.Write("Password: ");
+        string password = ReadPassword();
 
-        Console.Write("Your response: ");
-        string response = Console.ReadLine();
-
-        Console.Write("Mood rating (1-10, default 5): ");
-        int mood;
-        if (!int.TryParse(Console.ReadLine(), out mood))
+        if (_userRepository.ValidateUser(username, password))
         {
-            mood = 5;
+            _journalManager = new JournalManager(username);
+            Console.WriteLine($"Welcome, {username}!");
+            Console.ReadKey();
         }
-
-        Console.Write("Tags (comma-separated): ");
-        var tags = Console.ReadLine()
-            ?.Split(',')
-            .Select(t => t.Trim())
-            .Where(t => !string.IsNullOrEmpty(t))
-            .ToList();
-
-        journal.AddEntry(response, mood, tags);
-        Console.WriteLine("Entry added successfully!");
+        else
+        {
+            Console.WriteLine("Invalid credentials.");
+            Console.ReadKey();
+        }
     }
 
-    static void SaveJournal(Journal journal)
+    private void Register()
     {
-        Console.Write("Enter filename to save: ");
-        string filename = Console.ReadLine();
-        journal.SaveToFile(filename);
+        Console.Write("Choose a username: ");
+        string username = Console.ReadLine();
+        Console.Write("Choose a password: ");
+        string password = ReadPassword();
+
+        if (_userRepository.RegisterUser(username, password))
+        {
+            Console.WriteLine("Registration successful!");
+        }
+        else
+        {
+            Console.WriteLine("Username already exists.");
+        }
+        Console.ReadKey();
     }
 
-    static void LoadJournal(Journal journal)
+    private void RunJournalMenu()
     {
-        Console.Write("Enter filename to load: ");
-        string filename = Console.ReadLine();
-        journal.LoadFromFile(filename);
+        while (true)
+        {
+            Console.Clear();
+            DisplayJournalMenu();
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    var newEntry = _journalManager.CreateNewEntry();
+                    _journalManager.AddEntry(newEntry);
+                    break;
+                case "2":
+                    _journalManager.DisplayEntries();
+                    break;
+                case "3":
+                    Console.Write("Enter filename to save: ");
+                    string saveFilename = Console.ReadLine();
+                    _journalManager.SaveToFile(saveFilename);
+                    break;
+                case "4":
+                    Console.Write("Enter filename to load: ");
+                    string loadFilename = Console.ReadLine();
+                    _journalManager.LoadFromFile(loadFilename);
+                    break;
+                case "5":
+                    Console.Write("Enter search keyword: ");
+                    string keyword = Console.ReadLine();
+                    _journalManager.SearchEntries(keyword);
+                    break;
+                case "6":
+                    _journalManager = null;
+                    return;
+                default:
+                    Console.WriteLine("Invalid option.");
+                    break;
+            }
+
+            Console.WriteLine("\nPress any key to continue...");
+            Console.ReadKey();
+        }
     }
 
-    static void SearchJournal(Journal journal)
+    private void DisplayJournalMenu()
     {
-        Console.Write("Enter search keyword: ");
-        string keyword = Console.ReadLine();
-        journal.SearchEntries(keyword);
+        Console.WriteLine("--- Journal Menu ---");
+        Console.WriteLine("1. New Entry");
+        Console.WriteLine("2. View Entries");
+        Console.WriteLine("3. Save Journal");
+        Console.WriteLine("4. Load Journal");
+        Console.WriteLine("5. Search Entries");
+        Console.WriteLine("6. Logout");
+        Console.Write("Choose an option: ");
     }
 
-    static void ExportJournalToJson(Journal journal)
+    // Secure password input method
+    private string ReadPassword()
     {
-        Console.Write("Enter filename for JSON export: ");
-        string filename = Console.ReadLine();
-        journal.ExportToJson(filename);
+        string password = "";
+        ConsoleKeyInfo key;
+
+        do
+        {
+            key = Console.ReadKey(true);
+
+            if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+            {
+                password += key.KeyChar;
+                Console.Write("*");
+            }
+            else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+            {
+                password = password.Substring(0, password.Length - 1);
+                Console.Write("\b \b");
+            }
+        }
+        while (key.Key != ConsoleKey.Enter);
+
+        Console.WriteLine();
+        return password;
+    }
+
+    // Main entry point
+    public static void Main()
+    {
+        var app = new JournalApplication();
+        app.Run();
     }
 }
