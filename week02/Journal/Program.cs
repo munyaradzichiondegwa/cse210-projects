@@ -180,8 +180,8 @@ public class JournalEntry
 // Journal Class - Manages collection of journal entries
 public class Journal
 {
-    private List<JournalEntry> _entries = new List<JournalEntry>();
-    private PromptGenerator _promptGenerator = new PromptGenerator();
+    private List<JournalEntry> _entries = new();
+    private PromptGenerator _promptGenerator = new();
 
     public string GetRandomPrompt() => _promptGenerator.GetRandomPrompt();
 
@@ -262,3 +262,4 @@ public class Journal
 
     public int GetEntryCount() => _entries.Count;
 }
+
