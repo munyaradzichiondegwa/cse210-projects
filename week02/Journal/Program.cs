@@ -1,305 +1,299 @@
-
-// Purpose: Create a journal entry class that has a prompt, response, and date.
-//          The journal entry class should have a constructor that takes in a prompt and response.
-//          The journal entry class should have a ToString method that returns the date, prompt, and response.
-// Added category to the JournalEntry class (Exceed limit)
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-
-public class Entry
+// Prompt Generator Class - Provides unique, randomized prompts
+public class PromptGenerator
 {
-    public string Date { get; set; }
-    public string Prompt { get; set; }
-    public string Response { get; set; }
-    public string Mood { get; set; }
-    public List<string> Tags { get; set; }
-    public Location EntryLocation { get; set; }
-    public Weather WeatherCondition { get; set; }
-
-    public Entry(string prompt, string response, string mood, List<string> tags)
+    private static readonly string[] _defaultPrompts = new[]
     {
-        Date = DateTime.Now.ToString("yyyy-MM-dd");
-        Prompt = prompt;
-        Response = response;
-        Mood = mood;
-        Tags = tags ?? new List<string>();
-        EntryLocation = new Location();
-        WeatherCondition = new Weather();
-    }
-
-    public string GetEntryAsString()
-    {
-        string tagString = Tags.Count > 0 ? string.Join(", ", Tags) : "No tags";
-        return $"Date: {Date}\n" +
-               $"Mood: {Mood}\n" +
-               $"Prompt: {Prompt}\n" +
-               $"Response: {Response}\n" +
-               $"Tags: {tagString}\n" +
-               $"Location: {EntryLocation.City}, {EntryLocation.Country}\n" +
-               $"Weather: {WeatherCondition.Condition}, {WeatherCondition.Temperature}°C\n";
-    }
-
-    public string GetEntryAsCSV()
-    {
-        string tagString = string.Join("|", Tags);
-        return $"{Date}~|~{Prompt}~|~{Response}~|~{Mood}~|~{tagString}~|~" +
-               $"{EntryLocation.City}~|~{EntryLocation.Country}~|~" +
-               $"{WeatherCondition.Condition}~|~{WeatherCondition.Temperature}";
-    }
-}
-
-public class Location
-{
-    public string City { get; set; }
-    public string Country { get; set; }
-
-    public Location(string city = "", string country = "")
-    {
-        City = city;
-        Country = country;
-    }
-}
-
-public class Weather
-{
-    public string Condition { get; set; }
-    public int Temperature { get; set; } // Assuming temperature in Celsius
-
-    public Weather(string condition = "", int temperature = 0)
-    {
-        Condition = condition;
-        Temperature = temperature;
-    }
-}
-// Create User class with Username and Password properties
-
-public class User
-{
-    public string Username { get; set; }
-    public string Password { get; set; }
-
-    public User(string username, string password)
-    {
-        Username = username;
-        Password = password;
-    }
-}
-
-// week02/Journal/Journal.cs
-// Added Search Functionality to Journal.cs (Exceed limits)
-// Added Backup and Restore Functionality to Journal.cs (Exceed limits)
-// Added Export to JSON Functionality to Journal.cs (Exceed limits)
-
-public class Journal
-{
-    private List<Entry> entries = new List<Entry>();
-    private static readonly string[] prompts = {
         "Who was the most interesting person I interacted with today?",
         "What was the best part of my day?",
         "How did I see the hand of the Lord in my life today?",
         "What was the strongest emotion I felt today?",
         "If I had one thing I could do over today, what would it be?",
-        "What is something I learned today?",
-        "What made me smile today?",
-        "What challenges did I face today?",
         "What am I grateful for today?",
-        "How can I improve tomorrow?"
+        "What challenge did I overcome today?",
+        "What made me smile today?",
+        "What did I learn about myself today?",
+        "What goal am I working towards?"
     };
 
-    private string lastPrompt;
+    private List<string> _usedPrompts = new List<string>();
+    private Random _random = new Random();
 
-    public void AddEntry(string response, string mood, List<string> tags)
+    public string GetRandomPrompt()
     {
-        var random = new Random();
-        lastPrompt = prompts[random.Next(prompts.Length)];
-        
-        entries.Add(new Entry(lastPrompt, response, mood, tags));
+        // If all prompts have been used, reset the list
+        if (_usedPrompts.Count >= _defaultPrompts.Length)
+        {
+            _usedPrompts.Clear();
+        }
+
+        // Find an unused prompt
+        string prompt;
+        do
+        {
+            prompt = _defaultPrompts[_random.Next(_defaultPrompts.Length)];
+        } while (_usedPrompts.Contains(prompt));
+
+        _usedPrompts.Add(prompt);
+        return prompt;
+    }
+}
+
+// Entry Class - Represents a single journal entry
+public class JournalEntry
+{
+    public string Date { get; }
+    public string Prompt { get; }
+    public string Response { get; }
+    public int Mood { get; }  // Added mood rating
+    public List<string> Tags { get; }  // Added tags for categorization
+
+    public JournalEntry(string prompt, string response, int mood = 5, List<string> tags = null)
+    {
+        Date = DateTime.Now.ToString("yyyy-MM-dd");
+        Prompt = prompt;
+        Response = response;
+        Mood = Math.Clamp(mood, 1, 10);  // Mood rating from 1-10
+        Tags = tags ?? new List<string>();
+    }
+
+    // Enhanced display method
+    public void Display()
+    {
+        Console.WriteLine($"Date: {Date}");
+        Console.WriteLine($"Prompt: {Prompt}");
+        Console.WriteLine($"Response: {Response}");
+        Console.WriteLine($"Mood Rating: {Mood}/10");
+        Console.WriteLine($"Tags: {(Tags.Any() ? string.Join(", ", Tags) : "No tags")}");
+        Console.WriteLine(new string('-', 50));
+    }
+
+    // Method to convert entry to CSV format
+    public string ToCSV()
+    {
+        // Escape commas in the response and prompt
+        string escapedPrompt = Prompt.Replace(",", "~");
+        string escapedResponse = Response.Replace(",", "~");
+        string escapedTags = string.Join(";", Tags).Replace(",", "~");
+
+        return $"{Date},{escapedPrompt},{escapedResponse},{Mood},{escapedTags}";
+    }
+
+    // Static method to parse CSV back to JournalEntry
+    public static JournalEntry FromCSV(string csvLine)
+    {
+        var parts = csvLine.Split(',');
+        if (parts.Length < 5) throw new ArgumentException("Invalid CSV format");
+
+        // Unescape commas
+        string prompt = parts[1].Replace("~", ",");
+        string response = parts[2].Replace("~", ",");
+        int mood = int.Parse(parts[3]);
+        List<string> tags = parts[4].Split(';', StringSplitOptions.RemoveEmptyEntries)
+                                     .Select(t => t.Replace("~", ","))
+                                     .ToList();
+
+        return new JournalEntry(prompt, response, mood, tags);
+    }
+}
+
+// Journal Class - Manages collection of journal entries
+public class Journal
+{
+    private List<JournalEntry> _entries = new List<JournalEntry>();
+    private PromptGenerator _promptGenerator = new PromptGenerator();
+
+    public string GetRandomPrompt() => _promptGenerator.GetRandomPrompt();
+
+    public void AddEntry(string response, int mood = 5, List<string> tags = null)
+    {
+        string prompt = GetRandomPrompt();
+        var entry = new JournalEntry(prompt, response, mood, tags);
+        _entries.Add(entry);
     }
 
     public void DisplayEntries()
     {
-        foreach (var entry in entries)
+        if (!_entries.Any())
         {
-            Console.WriteLine(entry.GetEntryAsString());
+            Console.WriteLine("No entries found.");
+            return;
+        }
+
+        foreach (var entry in _entries)
+        {
+            entry.Display();
         }
     }
 
     public void SaveToFile(string filename)
     {
-        using (var writer = new StreamWriter(filename))
+        try
         {
-            foreach (var entry in entries)
-            {
-                writer.WriteLine(entry.GetEntryAsCSV());
-            }
+            File.WriteAllLines(filename, _entries.Select(e => e.ToCSV()));
+            Console.WriteLine($"Journal saved to {filename}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving journal: {ex.Message}");
         }
     }
 
     public void LoadFromFile(string filename)
     {
-        entries.Clear();
-        using (var reader = new StreamReader(filename))
+        try
         {
-            string line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                var parts = line.Split('~|~');
-                if (parts.Length >= 8)
-                {
-                    List<string> tags = parts[4].Split('|').Select(t => t.Trim()).ToList();
-                    entries.Add(new Entry(parts[2].Trim(), parts[3].Trim(), parts[1].Trim(), tags) 
-                    { 
-                        Date = parts[0].Trim(), 
-                        EntryLocation = new Location(parts[6].Trim(), parts[7].Trim()), 
-                        WeatherCondition = new Weather(parts[5].Trim(), int.Parse(parts[8].Trim())) 
-                    });
-                }
-            }
+            var lines = File.ReadAllLines(filename);
+            _entries.Clear();
+            _entries.AddRange(lines.Select(JournalEntry.FromCSV));
+            Console.WriteLine($"Journal loaded from {filename}");
         }
-    }
-
-    public void SearchEntries(string keyword)
-    {
-        var results = entries.Where(e => e.Response.Contains(keyword, StringComparison.OrdinalIgnoreCase) || 
-                                           e.Date.Contains(keyword)).ToList();
-        if (results.Count > 0)
+        catch (Exception ex)
         {
-            foreach (var entry in results)
-            {
-                Console.WriteLine(entry.GetEntryAsString());
-            }
+            Console.WriteLine($"Error loading journal: {ex.Message}");
         }
-        else
-        {
-            Console.WriteLine("No entries found.");
-        }
-    }
-
-    public void BackupEntries(string backupPath)
-    {
-        SaveToFile(backupPath);
-    }
-
-    public void RestoreEntries(string backupPath)
-    {
-        LoadFromFile(backupPath);
     }
 
     public void ExportToJson(string filename)
     {
-        var json = JsonSerializer.Serialize(entries);
+        var json = JsonSerializer.Serialize(_entries, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(filename, json);
+        Console.WriteLine($"Journal exported to {filename}");
     }
 
-    public string GetLastPrompt()
+    public void SearchEntries(string keyword)
     {
-        return lastPrompt;
+        var results = _entries.Where(e => 
+            e.Prompt.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+            e.Response.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+            e.Tags.Any(t => t.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        if (results.Any())
+        {
+            Console.WriteLine("Matching Entries:");
+            results.ForEach(e => e.Display());
+        }
+        else
+        {
+            Console.WriteLine("No matching entries found.");
+        }
     }
+
+    public int GetEntryCount() => _entries.Count;
 }
 
-
-// week02/Journal/Program.cs
+// Main Program Class
 class Program
 {
     static void Main(string[] args)
     {
-        var journal = new Journal();
-        User currentUser = null;
+        Journal journal = new Journal();
 
-        while (currentUser == null)
+        while (true)
         {
-            Console.Write("Enter username: ");
-            var username = Console.ReadLine();
-            Console.Write("Enter password: ");
-            var password = Console.ReadLine();
-            currentUser = new User(username, password);
-            Console.WriteLine($"Welcome, {currentUser.Username}!");
-        }
+            DisplayMenu();
+            string choice = Console.ReadLine();
 
-        bool continueRunning = true;
-
-        while (continueRunning)
-        {
-            Console.WriteLine("\nJournal Menu:");
-            Console.WriteLine("1. Write a new entry");
-            Console.WriteLine("2. Display journal");
-            Console.WriteLine("3. Save journal to file");
-            Console.WriteLine("4. Load journal from file");
-            Console.WriteLine("5. Search entries");
-            Console.WriteLine("6. Backup journal");
-            Console.WriteLine("7. Restore journal");
-            Console.WriteLine("8. Export journal to JSON");
-            Console.WriteLine("9. Exit");
-            Console.Write("Choose an option: ");
-
-            switch (Console.ReadLine())
+            switch (choice)
             {
                 case "1":
-                    // Get the response from the user
-                    Console.Write("Your response: ");
-                    var response = Console.ReadLine();
-                    
-                    // Get the user's mood
-                    Console.Write("Your mood: ");
-                    var mood = Console.ReadLine();
-                    
-                    // Get tags from the user
-                    Console.Write("Enter tags (comma separated): ");
-                    var tagsInput = Console.ReadLine();
-                    var tags = tagsInput?.Split(',').Select(t => t.Trim()).ToList() ?? new List<string>();
-                    
-                    // Get the prompt used in this entry
-                    var prompt = journal.GetLastPrompt();
-                    Console.WriteLine($"Using prompt: {prompt}");
-
-                    // Add the entry to the journal
-                    journal.AddEntry(response, mood, tags);
+                    AddNewEntry(journal);
                     break;
                 case "2":
                     journal.DisplayEntries();
                     break;
                 case "3":
-                    Console.Write("Enter filename to save: ");
-                    var saveFilename = Console.ReadLine();
-                    journal.SaveToFile(saveFilename);
+                    SaveJournal(journal);
                     break;
                 case "4":
-                    Console.Write("Enter filename to load: ");
-                    var loadFilename = Console.ReadLine();
-                    journal.LoadFromFile(loadFilename);
+                    LoadJournal(journal);
                     break;
                 case "5":
-                    Console.Write("Enter keyword to search: ");
-                    var keyword = Console.ReadLine();
-                    journal.SearchEntries(keyword);
+                    SearchJournal(journal);
                     break;
                 case "6":
-                    Console.Write("Enter filename for backup: ");
-                    var backupFilename = Console.ReadLine();
-                    journal.BackupEntries(backupFilename);
+                    ExportJournalToJson(journal);
                     break;
                 case "7":
-                    Console.Write("Enter filename to restore from: ");
-                    var restoreFilename = Console.ReadLine();
-                    journal.RestoreEntries(restoreFilename);
-                    break;
-                case "8":
-                    Console.Write("Enter filename for export (JSON): ");
-                    var exportFilename = Console.ReadLine();
-                    journal.ExportToJson(exportFilename);
-                    break;
-                case "9":
-                    continueRunning = false;
-                    break;
+                    Console.WriteLine("Thank you for journaling today!");
+                    return;
                 default:
                     Console.WriteLine("Invalid option. Please try again.");
                     break;
             }
         }
+    }
+
+    static void DisplayMenu()
+    {
+        Console.WriteLine("\n--- Personal Journal ---");
+        Console.WriteLine("1. Write a New Entry");
+        Console.WriteLine("2. Display All Entries");
+        Console.WriteLine("3. Save Journal");
+        Console.WriteLine("4. Load Journal");
+        Console.WriteLine("5. Search Entries");
+        Console.WriteLine("6. Export to JSON");
+        Console.WriteLine("7. Exit");
+        Console.Write("Choose an option: ");
+    }
+
+    static void AddNewEntry(Journal journal)
+    {
+        string prompt = journal.GetRandomPrompt();
+        Console.WriteLine($"Prompt: {prompt}");
+
+        Console.Write("Your response: ");
+        string response = Console.ReadLine();
+
+        Console.Write("Mood rating (1-10, default 5): ");
+        int mood;
+        if (!int.TryParse(Console.ReadLine(), out mood))
+        {
+            mood = 5;
+        }
+
+        Console.Write("Tags (comma-separated): ");
+        var tags = Console.ReadLine()
+            ?.Split(',')
+            .Select(t => t.Trim())
+            .Where(t => !string.IsNullOrEmpty(t))
+            .ToList();
+
+        journal.AddEntry(response, mood, tags);
+        Console.WriteLine("Entry added successfully!");
+    }
+
+    static void SaveJournal(Journal journal)
+    {
+        Console.Write("Enter filename to save: ");
+        string filename = Console.ReadLine();
+        journal.SaveToFile(filename);
+    }
+
+    static void LoadJournal(Journal journal)
+    {
+        Console.Write("Enter filename to load: ");
+        string filename = Console.ReadLine();
+        journal.LoadFromFile(filename);
+    }
+
+    static void SearchJournal(Journal journal)
+    {
+        Console.Write("Enter search keyword: ");
+        string keyword = Console.ReadLine();
+        journal.SearchEntries(keyword);
+    }
+
+    static void ExportJournalToJson(Journal journal)
+    {
+        Console.Write("Enter filename for JSON export: ");
+        string filename = Console.ReadLine();
+        journal.ExportToJson(filename);
     }
 }
