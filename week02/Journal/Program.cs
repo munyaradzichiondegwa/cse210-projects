@@ -6,7 +6,78 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+
+// User Management Class
+public class UserManager
+{
+    private Dictionary<string, string> _users = new Dictionary<string, string>();
+    private const string USER_FILE = "users.json";
+
+    public UserManager()
+    {
+        LoadUsers();
+    }
+
+    private void LoadUsers()
+    {
+        if (File.Exists(USER_FILE))
+        {
+            try
+            {
+                var jsonString = File.ReadAllText(USER_FILE);
+                _users = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonString);
+            }
+            catch
+            {
+                _users = new Dictionary<string, string>();
+            }
+        }
+    }
+
+    private void SaveUsers()
+    {
+        var jsonString = JsonSerializer.Serialize(_users, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(USER_FILE, jsonString);
+    }
+
+    // Hash password using SHA256
+    private string HashPassword(string password)
+    {
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            byte[] hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashedBytes);
+        }
+    }
+
+    public bool RegisterUser(string username, string password)
+    {
+        // Check if username already exists
+        if (_users.ContainsKey(username))
+        {
+            return false;
+        }
+
+        // Store hashed password
+        _users[username] = HashPassword(password);
+        SaveUsers();
+        return true;
+    }
+
+    public bool AuthenticateUser(string username, string password)
+    {
+        if (!_users.ContainsKey(username))
+        {
+            return false;
+        }
+
+        // Compare hashed passwords
+        return _users[username] == HashPassword(password);
+    }
+}
 
 // Prompt Generator Class - Provides unique, randomized prompts
 public class PromptGenerator
@@ -104,4 +175,90 @@ public class JournalEntry
 
         return new JournalEntry(prompt, response, mood, tags);
     }
+}
+
+// Journal Class - Manages collection of journal entries
+public class Journal
+{
+    private List<JournalEntry> _entries = new List<JournalEntry>();
+    private PromptGenerator _promptGenerator = new PromptGenerator();
+
+    public string GetRandomPrompt() => _promptGenerator.GetRandomPrompt();
+
+    public void AddEntry(string response, int mood = 5, List<string> tags = null)
+    {
+        string prompt = GetRandomPrompt();
+        var entry = new JournalEntry(prompt, response, mood, tags);
+        _entries.Add(entry);
+    }
+
+    public void DisplayEntries()
+    {
+        if (!_entries.Any())
+        {
+            Console.WriteLine("No entries found.");
+            return;
+        }
+
+        foreach (var entry in _entries)
+        {
+            entry.Display();
+        }
+    }
+
+    public void SaveToFile(string filename)
+    {
+        try
+        {
+            File.WriteAllLines(filename, _entries.Select(e => e.ToCSV()));
+            Console.WriteLine($"Journal saved to {filename}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving journal: {ex.Message}");
+        }
+    }
+
+    public void LoadFromFile(string filename)
+    {
+        try
+        {
+            var lines = File.ReadAllLines(filename);
+            _entries.Clear();
+            _entries.AddRange(lines.Select(JournalEntry.FromCSV));
+            Console.WriteLine($"Journal loaded from {filename}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading journal: {ex.Message}");
+        }
+    }
+
+    public void ExportToJson(string filename)
+    {
+        var json = JsonSerializer.Serialize(_entries, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(filename, json);
+        Console.WriteLine($"Journal exported to {filename}");
+    }
+
+    public void SearchEntries(string keyword)
+    {
+        var results = _entries.Where(e => 
+            e.Prompt.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+            e.Response.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+            e.Tags.Any(t => t.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        if (results.Any())
+        {
+            Console.WriteLine("Matching Entries:");
+            results.ForEach(e => e.Display());
+        }
+        else
+        {
+            Console.WriteLine("No matching entries found.");
+        }
+    }
+
+    public int GetEntryCount() => _entries.Count;
 }
