@@ -47,3 +47,61 @@ public class PromptGenerator
         return prompt;
     }
 }
+
+// Entry Class - Represents a single journal entry
+public class JournalEntry
+{
+    public string Date { get; }
+    public string Prompt { get; }
+    public string Response { get; }
+    public int Mood { get; }  // Added mood rating
+    public List<string> Tags { get; }  // Added tags for categorization
+
+    public JournalEntry(string prompt, string response, int mood = 5, List<string> tags = null)
+    {
+        Date = DateTime.Now.ToString("yyyy-MM-dd");
+        Prompt = prompt;
+        Response = response;
+        Mood = Math.Clamp(mood, 1, 10);  // Mood rating from 1-10
+        Tags = tags ?? new List<string>();
+    }
+
+    // Enhanced display method
+    public void Display()
+    {
+        Console.WriteLine($"Date: {Date}");
+        Console.WriteLine($"Prompt: {Prompt}");
+        Console.WriteLine($"Response: {Response}");
+        Console.WriteLine($"Mood Rating: {Mood}/10");
+        Console.WriteLine($"Tags: {(Tags.Any() ? string.Join(", ", Tags) : "No tags")}");
+        Console.WriteLine(new string('-', 50));
+    }
+
+    // Method to convert entry to CSV format
+    public string ToCSV()
+    {
+        // Escape commas in the response and prompt
+        string escapedPrompt = Prompt.Replace(",", "~");
+        string escapedResponse = Response.Replace(",", "~");
+        string escapedTags = string.Join(";", Tags).Replace(",", "~");
+
+        return $"{Date},{escapedPrompt},{escapedResponse},{Mood},{escapedTags}";
+    }
+
+    // Static method to parse CSV back to JournalEntry
+    public static JournalEntry FromCSV(string csvLine)
+    {
+        var parts = csvLine.Split(',');
+        if (parts.Length < 5) throw new ArgumentException("Invalid CSV format");
+
+        // Unescape commas
+        string prompt = parts[1].Replace("~", ",");
+        string response = parts[2].Replace("~", ",");
+        int mood = int.Parse(parts[3]);
+        List<string> tags = parts[4].Split(';', StringSplitOptions.RemoveEmptyEntries)
+                                     .Select(t => t.Replace("~", ","))
+                                     .ToList();
+
+        return new JournalEntry(prompt, response, mood, tags);
+    }
+}
