@@ -1,3 +1,7 @@
+// path: week02/Journal/Program.cs
+// Week 2 - Personal Journal with Tags and Mood Rating
+// This program is an enhanced version of the Personal Journal program from Week 1.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
