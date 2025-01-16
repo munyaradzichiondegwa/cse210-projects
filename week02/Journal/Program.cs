@@ -263,3 +263,203 @@ public class Journal
     public int GetEntryCount() => _entries.Count;
 }
 
+// Main Program Class
+class Program
+{
+    static readonly UserManager userManager = new();
+    static Journal currentJournal;
+
+    static void Main(string[] args)
+    {
+        while (true)
+        {
+            DisplayMainMenu();
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    Login();
+                    break;
+                case "2":
+                    Register();
+                    break;
+                case "3":
+                    Console.WriteLine("Goodbye!");
+                    return;
+                default:
+                    Console.WriteLine("Invalid option. Please try again.");
+                    break;
+            }
+
+            // If journal is initialized, show journal menu
+            while (currentJournal != null)
+            {
+                if (!DisplayJournalMenu())
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    static void DisplayMainMenu()
+    {
+        Console.WriteLine("\n--- Personal Journal Application ---");
+        Console.WriteLine("1. Login");
+        Console.WriteLine("2. Register New User");
+        Console.WriteLine("3. Exit");
+        Console.Write("Choose an option: ");
+    }
+
+    static void Login()
+    {
+        Console.Write("Enter username: ");
+        string username = Console.ReadLine();
+        Console.Write("Enter password: ");
+        string password = ReadPassword();
+
+        if (userManager.AuthenticateUser(username, password))
+        {
+            Console.WriteLine($"Welcome, {username}!");
+            currentJournal = new Journal();
+        }
+        else
+        {
+            Console.WriteLine("Invalid username or password.");
+        }
+    }
+
+    static void Register()
+    {
+        Console.Write("Choose a username: ");
+        string username = Console.ReadLine();
+        Console.Write("Choose a password: ");
+        string password = ReadPassword();
+
+        if (userManager.RegisterUser(username, password))
+        {
+            Console.WriteLine("Registration successful!");
+        }
+        else
+        {
+            Console.WriteLine("Username already exists. Please choose another.");
+        }
+    }
+
+    // Securely read password (mask input)
+    static string ReadPassword()
+    {
+        string password = "";
+        ConsoleKeyInfo key;
+
+        do
+        {
+            key = Console.ReadKey(true);
+
+            // Ignore any non-printable characters
+            if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+            {
+                password += key.KeyChar;
+                Console.Write("*");
+            }
+            else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+            {
+                password = password[..^1];
+                Console.Write("\b \b");
+            }
+        }
+        while (key.Key != ConsoleKey.Enter);
+
+        Console.WriteLine();
+        return password;
+    }
+
+    static bool DisplayJournalMenu()
+    {
+        Console.WriteLine("\n--- Personal Journal Menu ---");
+        Console.WriteLine("1. Write a New Entry");
+        Console.WriteLine("2. Display All Entries");
+        Console.WriteLine("3. Save Journal");
+        Console.WriteLine("4. Load Journal");
+        Console.WriteLine("5. Search Entries");
+        Console.WriteLine("6. Export to JSON");
+        Console.WriteLine("7. Logout");
+        Console.Write("Choose an option: ");
+
+        string choice = Console.ReadLine();
+
+        switch (choice)
+        {
+            case "1":
+                AddNewEntry(currentJournal);
+                return true;
+            case "2":
+                currentJournal.DisplayEntries();
+                return true;
+            case "3":
+                SaveJournal(currentJournal);
+                return true;
+            case "4":
+                LoadJournal(currentJournal);
+                return true;
+            case "5":
+                SearchJournal(currentJournal);
+                return true;
+            case "6":
+                ExportJournalToJson(currentJournal);
+                return true;
+            case "7":
+                currentJournal = null;
+                Console.WriteLine("Logged out successfully.");
+                return false;
+            default:
+                Console.WriteLine("Invalid option. Please try again.");
+                return true;
+        }
+    }
+
+    static void AddNewEntry(Journal journal)
+    {
+        Console.Write("Enter your response: ");
+        string response = Console.ReadLine();
+        Console.Write("Mood rating (1-10): ");
+        int mood = int.Parse(Console.ReadLine());
+        Console.Write("Tags (comma-separated): ");
+        var tags = Console.ReadLine()
+            ?.Split(',')
+            .Select(t => t.Trim())
+            .Where(t => !string.IsNullOrEmpty(t))
+            .ToList();
+
+        journal.AddEntry(response, mood, tags);
+        Console.WriteLine("Entry added successfully!");
+    }
+    static void SaveJournal(Journal journal)
+    {
+        Console.Write("Enter filename to save: ");
+        string filename = Console.ReadLine();
+        journal.SaveToFile(filename);
+    }
+
+    static void LoadJournal(Journal journal)
+    {
+        Console.Write("Enter filename to load: ");
+        string filename = Console.ReadLine();
+        journal.LoadFromFile(filename);
+    }
+
+    static void SearchJournal(Journal journal)
+    {
+        Console.Write("Enter search keyword: ");
+        string keyword = Console.ReadLine();
+        journal.SearchEntries(keyword);
+    }
+
+    static void ExportJournalToJson(Journal journal)
+    {
+        Console.Write("Enter filename for JSON export: ");
+        string filename = Console.ReadLine();
+        journal.ExportToJson(filename);
+    }
+}
