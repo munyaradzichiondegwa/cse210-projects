@@ -11,28 +11,71 @@ using System.Linq;
 using System.Text.Json;
 
 
-public class JournalEntry
+public class Entry
 {
+    public string Date { get; set; }
     public string Prompt { get; set; }
     public string Response { get; set; }
-    public string Date { get; set; }
-    public string Category { get; set; }
+    public string Mood { get; set; }
+    public List<string> Tags { get; set; }
+    public Location EntryLocation { get; set; }
+    public Weather WeatherCondition { get; set; }
 
-    public JournalEntry(string prompt, string response, string category)
+    public Entry(string prompt, string response, string mood, List<string> tags)
     {
+        Date = DateTime.Now.ToString("yyyy-MM-dd");
         Prompt = prompt;
         Response = response;
-        Date = DateTime.Now.ToString("yyyy-MM-dd");
-        Category = category;
+        Mood = mood;
+        Tags = tags ?? new List<string>();
+        EntryLocation = new Location();
+        WeatherCondition = new Weather();
     }
 
-    public override string ToString()
+    public string GetEntryAsString()
     {
-        return $"{Date} | {Category} | {Prompt} | {Response}";
+        string tagString = Tags.Count > 0 ? string.Join(", ", Tags) : "No tags";
+        return $"Date: {Date}\n" +
+               $"Mood: {Mood}\n" +
+               $"Prompt: {Prompt}\n" +
+               $"Response: {Response}\n" +
+               $"Tags: {tagString}\n" +
+               $"Location: {EntryLocation.City}, {EntryLocation.Country}\n" +
+               $"Weather: {WeatherCondition.Condition}, {WeatherCondition.Temperature}°C\n";
+    }
+
+    public string GetEntryAsCSV()
+    {
+        string tagString = string.Join("|", Tags);
+        return $"{Date}~|~{Prompt}~|~{Response}~|~{Mood}~|~{tagString}~|~" +
+               $"{EntryLocation.City}~|~{EntryLocation.Country}~|~" +
+               $"{WeatherCondition.Condition}~|~{WeatherCondition.Temperature}";
     }
 }
 
-// week02/Journal/UserInterface.cs (Exceed expectations)
+public class Location
+{
+    public string City { get; set; }
+    public string Country { get; set; }
+
+    public Location(string city = "", string country = "")
+    {
+        City = city;
+        Country = country;
+    }
+}
+
+public class Weather
+{
+    public string Condition { get; set; }
+    public int Temperature { get; set; } // Assuming temperature in Celsius
+
+    public Weather(string condition = "", int temperature = 0)
+    {
+        Condition = condition;
+        Temperature = temperature;
+    }
+}
 // Create User class with Username and Password properties
 
 public class User
@@ -54,31 +97,35 @@ public class User
 
 public class Journal
 {
-    private List<JournalEntry> entries = new List<JournalEntry>();
+    private List<Entry> entries = new List<Entry>();
     private static readonly string[] prompts = {
         "Who was the most interesting person I interacted with today?",
         "What was the best part of my day?",
         "How did I see the hand of the Lord in my life today?",
         "What was the strongest emotion I felt today?",
-        "If I had one thing I could do over today, what would it be?"
+        "If I had one thing I could do over today, what would it be?",
+        "What is something I learned today?",
+        "What made me smile today?",
+        "What challenges did I face today?",
+        "What am I grateful for today?",
+        "How can I improve tomorrow?"
     };
 
-    public void AddEntry(string response)
+    private string lastPrompt;
+
+    public void AddEntry(string response, string mood, List<string> tags)
     {
         var random = new Random();
-        var prompt = prompts[random.Next(prompts.Length)];
+        lastPrompt = prompts[random.Next(prompts.Length)];
         
-        Console.Write("Enter a category for this entry: ");
-        var category = Console.ReadLine();
-        
-        entries.Add(new JournalEntry(prompt, response, category));
+        entries.Add(new Entry(lastPrompt, response, mood, tags));
     }
 
     public void DisplayEntries()
     {
         foreach (var entry in entries)
         {
-            Console.WriteLine(entry);
+            Console.WriteLine(entry.GetEntryAsString());
         }
     }
 
@@ -88,7 +135,7 @@ public class Journal
         {
             foreach (var entry in entries)
             {
-                writer.WriteLine(entry.ToString());
+                writer.WriteLine(entry.GetEntryAsCSV());
             }
         }
     }
@@ -101,12 +148,15 @@ public class Journal
             string line;
             while ((line = reader.ReadLine()) != null)
             {
-                var parts = line.Split('|');
-                if (parts.Length == 4)
+                var parts = line.Split('~|~');
+                if (parts.Length >= 8)
                 {
-                    entries.Add(new JournalEntry(parts[2].Trim(), parts[3].Trim(), parts[1].Trim()) 
+                    List<string> tags = parts[4].Split('|').Select(t => t.Trim()).ToList();
+                    entries.Add(new Entry(parts[2].Trim(), parts[3].Trim(), parts[1].Trim(), tags) 
                     { 
-                        Date = parts[0].Trim() 
+                        Date = parts[0].Trim(), 
+                        EntryLocation = new Location(parts[6].Trim(), parts[7].Trim()), 
+                        WeatherCondition = new Weather(parts[5].Trim(), int.Parse(parts[8].Trim())) 
                     });
                 }
             }
@@ -121,7 +171,7 @@ public class Journal
         {
             foreach (var entry in results)
             {
-                Console.WriteLine(entry);
+                Console.WriteLine(entry.GetEntryAsString());
             }
         }
         else
@@ -145,10 +195,15 @@ public class Journal
         var json = JsonSerializer.Serialize(entries);
         File.WriteAllText(filename, json);
     }
+
+    public string GetLastPrompt()
+    {
+        return lastPrompt;
+    }
 }
 
-// week02/Journal/Program.cs
 
+// week02/Journal/Program.cs
 class Program
 {
     static void Main(string[] args)
@@ -185,9 +240,25 @@ class Program
             switch (Console.ReadLine())
             {
                 case "1":
+                    // Get the response from the user
                     Console.Write("Your response: ");
                     var response = Console.ReadLine();
-                    journal.AddEntry(response);
+                    
+                    // Get the user's mood
+                    Console.Write("Your mood: ");
+                    var mood = Console.ReadLine();
+                    
+                    // Get tags from the user
+                    Console.Write("Enter tags (comma separated): ");
+                    var tagsInput = Console.ReadLine();
+                    var tags = tagsInput?.Split(',').Select(t => t.Trim()).ToList() ?? new List<string>();
+                    
+                    // Get the prompt used in this entry
+                    var prompt = journal.GetLastPrompt();
+                    Console.WriteLine($"Using prompt: {prompt}");
+
+                    // Add the entry to the journal
+                    journal.AddEntry(response, mood, tags);
                     break;
                 case "2":
                     journal.DisplayEntries();
