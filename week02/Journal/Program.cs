@@ -243,7 +243,7 @@ public class Journal
 
     public void SearchEntries(string keyword)
     {
-        var results = _entries.Where(e => 
+        var results = _entries.Where(e =>
             e.Prompt.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
             e.Response.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
             e.Tags.Any(t => t.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
