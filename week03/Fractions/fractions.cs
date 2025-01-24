@@ -1,52 +1,68 @@
-// Fraction.cs
-public class Fraction
+using System;
+
+namespace Fractions
 {
-    private int numerator;
-    private int denominator;
-
-    // Constructor with no parameters
-    public Fraction()
+    public class Fraction
     {
-        this.numerator = 1;
-        this.denominator = 1;
-    }
+        // Private attributes for numerator and denominator
+        private int numerator;
+        private int denominator;
 
-    // Constructor with one parameter for numerator
-    public Fraction(int numerator)
-    {
-        this.numerator = numerator;
-        this.denominator = 1;
-    }
+        // Constructor with no parameters
+        public Fraction()
+        {
+            numerator = 1;
+            denominator = 1;
+        }
 
-    // Constructor with two parameters for numerator and denominator
-    public Fraction(int numerator, int denominator)
-    {
-        this.numerator = numerator;
-        this.denominator = denominator;
-    }
+        // Constructor with one parameter (numerator)
+        public Fraction(int numerator)
+        {
+            this.numerator = numerator;
+            this.denominator = 1;
+        }
 
-    // Getters and setters for numerator and denominator
-    public int Numerator
-    {
-        get { return numerator; }
-        set { numerator = value; }
-    }
+        // Constructor with two parameters (numerator and denominator)
+        public Fraction(int numerator, int denominator)
+        {
+            if (denominator == 0)
+            {
+                throw new ArgumentException("Denominator cannot be zero.");
+            }
+            this.numerator = numerator;
+            this.denominator = denominator;
+        }
 
-    public int Denominator
-    {
-        get { return denominator; }
-        set { denominator = value; }
-    }
+        // Getters and Setters
+        public int Numerator
+        {
+            get { return numerator; }
+            set { numerator = value; }
+        }
 
-    // Method to return the fraction in the form "numerator/denominator"
-    public string GetFractionString()
-    {
-        return $"{numerator}/{denominator}";
-    }
+        public int Denominator
+        {
+            get { return denominator; }
+            set
+            {
+                if (value == 0)
+                {
+                    throw new ArgumentException("Denominator cannot be zero.");
+                }
+                denominator = value;
+            }
+        }
 
-    // Method to return the decimal value of the fraction
-    public double GetDecimalValue()
-    {
-        return (double)numerator / denominator;
+        // Method to return the fraction as a string
+        public string GetFractionString()
+        {
+            return $"{numerator}/{denominator}";
+        }
+
+        // Method to return the decimal value
+        public double GetDecimalValue()
+        {
+            return (double)numerator / denominator;
+        }
     }
 }
