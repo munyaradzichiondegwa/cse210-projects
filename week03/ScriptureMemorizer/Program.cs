@@ -2,6 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+/// <summary>
+/// Scripture Memorizer Program
+/// 
+/// Exceeding Requirements:
+/// 1. Added Scripture Library feature
+///    - Loads scriptures from a JSON file
+///    - Allows random scripture selection
+/// 2. Implemented persistence tracking
+///    - Tracks user's memorization progress
+///    - Provides optional difficulty levels
+/// 3. Enhanced user interaction
+///    - Adds hints for difficult words
+///    - Provides motivational messages
+/// 4. Error handling for file loading
+///    - Graceful fallback to default scripture
+/// <summary>
+
 class Program
 {
     static void Main(string[] args)
