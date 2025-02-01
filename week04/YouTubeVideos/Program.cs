@@ -35,7 +35,7 @@ class Program
             Console.WriteLine($"Number of Comments: {video.GetNumberOfComments()}");
 
             Console.WriteLine("Comments:");
-            foreach (Comment comment in video.Comments)
+            foreach (comment in video.Comments)
             {
                 Console.WriteLine($"{comment.CommenterName}: {comment.Text}");
             }
