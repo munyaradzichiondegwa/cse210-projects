@@ -1,36 +1,28 @@
 using System;
 using System.Collections.Generic;
 
-namespace YouTubeVideos
+public class Video
 {
-    public class Video
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public int Length { get; set; } // length in seconds
+    public List<Comment> Comments { get; set; }
+
+    public Video(string title, string author, int length)
     {
-        public string Title { get; set; }
-        public string Author { get; set; }
-        public int Length { get; set; }
-        public List<VideoComment> Comments { get; set; } = new List<VideoComment>();
-
-        public Video(string title, string author, int length)
-        {
-            Title = title;
-            Author = author;
-            Length = length;
-        }
-
-        public void AddComment(VideoComment comment)
-        {
-            Comments.Add(comment);
-        }
-
-        public int CommentCount()
-        {
-            return Comments.Count;
-        }
+        Title = title;
+        Author = author;
+        Length = length;
+        Comments = new List<Comment>();
     }
 
-    public class VideoComment
+    public void AddComment(Comment comment)
     {
-        public string Text { get; set; }
-        public string Author { get; set; }
+        Comments.Add(comment);
+    }
+
+    public int GetNumberOfComments()
+    {
+        return Comments.Count;
     }
 }
