@@ -7,8 +7,8 @@ class Program
     {
         // Create instances of Video
         Video video1 = new Video("Exploring Abstraction in OOP", "Munyaradzi Chiondegwa", 600);
-        Video video2 = new Video("Understanding Encapsulation in C#", "Jane Doe", 720);
-        Video video3 = new Video("Intro to Polymorphism", "John Smith", 540);
+        Video video2 = new Video("Understanding Encapsulation in C#", "Nevanji Munyaradzi", 720);
+        Video video3 = new Video("Intro to Polymorphism", "Kuda Wayne Chiviti", 540);
 
         // Add comments to each video
         video1.AddComment(new Comment("Alice", "Great explanation!"));
@@ -35,7 +35,7 @@ class Program
             Console.WriteLine($"Number of Comments: {video.GetNumberOfComments()}");
 
             Console.WriteLine("Comments:");
-            foreach (comment in video.Comments)
+            foreach (Comment comment in video.Comments)
             {
                 Console.WriteLine($"{comment.CommenterName}: {comment.Text}");
             }
