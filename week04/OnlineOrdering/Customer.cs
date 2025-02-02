@@ -11,7 +11,7 @@ public class Customer
         this.address = address;
     }
 
-    public bool LivesInUSA()
+    public bool LivesInZimbabwe()
     {
         return address.IsInZimbabwe();
     }
