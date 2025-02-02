@@ -4,25 +4,15 @@ using System.Collections.Generic;
 public class Video
 {
     public string Title { get; set; }
-    public string Description { get; set; }
-    public int Duration { get; set; } // Duration in seconds
-    public int Views { get; set; }
-    public int Likes { get; set; }
-    public DateTime UploadDate { get; set; }
-    public string Uploader { get; set; }
-    public List<string> Tags { get; set; }
+    public string Author { get; set; }
+    public int Length { get; set; } // length in seconds
     public List<Comment> Comments { get; set; }
 
-    public Video(string title, string description, int duration, int views, int likes, DateTime uploadDate, string uploader, List<string> tags)
+    public Video(string title, string author, int length)
     {
         Title = title;
-        Description = description;
-        Duration = duration;
-        Views = views;
-        Likes = likes;
-        UploadDate = uploadDate;
-        Uploader = uploader;
-        Tags = tags;
+        Author = author;
+        Length = length;
         Comments = new List<Comment>();
     }
 
@@ -34,30 +24,5 @@ public class Video
     public int GetNumberOfComments()
     {
         return Comments.Count;
-    }
-
-    public void Play()
-    {
-        // Code to play the video
-    }
-
-    public void Pause()
-    {
-        // Code to pause the video
-    }
-
-    public void Like()
-    {
-        Likes++;
-    }
-
-    public void Dislike()
-    {
-        // Code to dislike the video
-    }
-
-    public void Share()
-    {
-        // Code to share the video
     }
 }
