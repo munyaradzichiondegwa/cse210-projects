@@ -14,9 +14,9 @@ class Program
         Customer foreignCustomer = new Customer("Sibonfile Tshabangu", southAfricaAddress);
 
         // Create products
-        Product smartphone = new Product("001", "Smartphone", 150.00m, 1);
-        Product headphones = new Product("002", "Headphones", 20.00m, 2);
-        Product charger = new Product("003", "Charger", 10.00m, 1);
+        Product smartphone = new Product("001", "Smartphone", 450.00m, 1);
+        Product headphones = new Product("002", "Headphones", 70.00m, 2);
+        Product charger = new Product("003", "Charger", 90.00m, 1);
 
         // Create and process orders
         Order zimbabweOrder = new Order(zimbabweCustomer);
