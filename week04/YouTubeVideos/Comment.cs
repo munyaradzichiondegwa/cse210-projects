@@ -1,11 +1,29 @@
-public class Comment
-{
-    public string CommenterName { get; set; }
-    public string Text { get; set; }
+// This class helps store information about comments on the videos
+using System;
+using System.ComponentModel.Design;
 
-    public Comment(string commenterName, string text)
+public class Comment 
+{
+    // Tracking of who made the commnent and what they said
+    private string _commneterName;
+    private string _commentText;
+
+    // When a new commednt is made, this will give a name and the comment
+    public Comment(string commdntName, string _commentText)
     {
-        CommenterName = commenterName;
-        Text = text;
+        _commenterName = _commenterName;
+        _commentText = _commentText;
     }
+
+    // These methods let us get the commenter's name and comment text if we need them
+    public string GetCommnenterName()
+    {
+        return _commenterName;
+    }
+
+    public string GetCommnentText()
+    {
+        return _commentText;
+    }
+
 }
