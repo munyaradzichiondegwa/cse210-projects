@@ -4,23 +4,29 @@ using System.Collections.Generic;
 // Address class definition
 public class Address
 {
-  private string streetAddress;
-  private string city;
-  private string country;
-  public Address(string streetAddress, string city, string country)
+    
+    // Adress details
+  string street;
+  string city;
+  string country;
+
+  // Constructor to create an address
+  public Address(string street, string city, string country)
   {
-    this.streetAddress = streetAddress;
+    this.street = street;
     this.city = city;
     this.country = country;
   }
 
+    // Check if the address is in Zimbabwe
   public bool IsInZimbabwe()
   {
-    return country.Equals("Zimbabwe", StringComparison.OrdinalIgnoreCase);
+    return country.ToLower() == "zimbabwe";
   }
-
+    
+    //Get the full address 
   public string GetFullAddress()
   {
-    return $"{streetAddress}\n{city}\n{country}";
+    return $"{street}\n{city}\n{country}";
   }
 }
