@@ -1,4 +1,6 @@
 // This class helps store information about comments on the videos
+using System; 
+
 class Comment
 {
     public string Author { get; set; }
