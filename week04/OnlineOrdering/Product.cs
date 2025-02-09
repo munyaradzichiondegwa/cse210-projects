@@ -17,7 +17,7 @@ public class Product
     }
 
     // Calculate total cost of the product
-    public decimal GeTotalCost()
+    public decimal GetTotalCost()
     {
         return price * quantity;
     }
