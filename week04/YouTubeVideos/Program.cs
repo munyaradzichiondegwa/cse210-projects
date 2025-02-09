@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-class Program
+namespace YouTubeVideos
+{
+    class Program
 {
     static void Main(string[] args)
     {
@@ -37,4 +39,6 @@ class Program
            video.DisplayVideoInfo();
         }
     }
+}
+
 }
