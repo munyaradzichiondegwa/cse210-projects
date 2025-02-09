@@ -23,5 +23,4 @@ public class Assignment
     {
         return _studentName;
     }
-
 }
