@@ -1,6 +1,5 @@
 // This class helps store information about comments on the videos
 using System;
-using System.ComponentModel.Design;
 
 public class Comment 
 {
