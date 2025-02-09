@@ -17,6 +17,6 @@ public class Program
         Console.WriteLine(writingAssignment.GetWritingInformation());
 
 
-        Console.ReadKey(); // Keep console window open (optional)
+        Console.ReadKey(); 
     }
 }
