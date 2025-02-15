@@ -1,11 +1,26 @@
-namespace EternalQuest
+public class SimpleGoal : Goal
 {
-    // Class for simple goals
-    public class BasicGoal : Goal
-    {
-        public BasicGoal(string name, int value) : base(name, value) { }
+    public SimpleGoal(string name, string description, int value) : base(name, description, value) { }
 
-        public override bool IsComplete() => true;
-        public override void RecordEvent() { }
+    public override bool IsComplete() => IsCompleted;
+
+    public override int RecordEvent()
+    {
+        if (!IsCompleted)
+        {
+            IsCompleted = true;
+            return Value;
+        }
+        return 0;
+    }
+
+    public override string GetDetailsString()
+    {
+        return $"[{(IsCompleted ? "X" : " ")}] {Name} ({Description})";
+    }
+
+    public override string GetStringRepresentation()
+    {
+        return $"SimpleGoal:{Name},{Description},{Value},{IsCompleted}";
     }
 }

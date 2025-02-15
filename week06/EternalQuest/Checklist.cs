@@ -1,25 +1,39 @@
-using System;
-
-namespace EternalQuest
+public class ChecklistGoal : Goal
 {
-    public class ChecklistGoalNew : Goal
+    public int Target { get; set; }
+    public int Bonus { get; set; }
+    public int CompletedCount { get; set; } // Changed to public setter
+
+    public ChecklistGoal(string name, string description, int value, int target, int bonus) : base(name, description, value)
     {
-        public int Target { get; set;} // The number of times the goal must be completed
-       public int CompletedCount { get; set; } // The number of times the goal has been completed
+        Target = target;
+        Bonus = bonus;
+        CompletedCount = 0;
+    }
 
-        public ChecklistGoalNew(string name, int value, int target) : base(name, value)
-        {
-            Target = target;
-            CompletedCount = 0;
-        }
-        public override bool IsComplete() => CompletedCount >= Target;
+    public override bool IsComplete() => CompletedCount >= Target;
 
-        public override void RecordEvent()
+    public override int RecordEvent()
+    {
+        if (!IsComplete())
         {
-            if (!IsComplete())
+            CompletedCount++;
+            if (IsComplete())
             {
-                CompletedCount++;
+                return Value + Bonus;
             }
+            return Value;
         }
+        return 0;
+    }
+
+    public override string GetDetailsString()
+    {
+        return $"[{(IsComplete() ? "X" : " ")}] {Name} ({Description}) -- Completed {CompletedCount}/{Target} times";
+    }
+
+    public override string GetStringRepresentation()
+    {
+        return $"ChecklistGoal:{Name},{Description},{Value},{Bonus},{Target},{CompletedCount}";
     }
 }

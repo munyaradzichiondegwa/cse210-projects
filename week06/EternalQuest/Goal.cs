@@ -1,65 +1,22 @@
-// Base Class
 using System;
 
-namespace EternalQuest
+public abstract class Goal
 {
-    // Base Class for goals in the game
-    public abstract class Goal
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public int Value { get; set; }
+    public bool IsCompleted { get; set; } // Changed to public setter
+
+    protected Goal(string name, string description, int value)
     {
-        public string Name { get; set; }
-        public int Value { get; set; }
-        protected bool IsCompleted;
-
-        protected Goal(string name, int value)
-        {
-            Name = name;
-            Value = value;
-            IsCompleted = false;
-        }
-
-        public abstract bool IsComplete();
-        public abstract void RecordEvent();
+        Name = name;
+        Description = description;
+        Value = value;
+        IsCompleted = false;
     }
 
-    // Class for simple goals
-    public class SimpleGoal : Goal
-    {
-        public SimpleGoal(string name, int value) : base(name, value) { }
-
-        public override bool IsComplete() => true;
-        public override void RecordEvent() { }
-    }
-
-    // Class for eternal goals
-    public class EternalGoal : Goal
-    {
-        public EternalGoal(string name, int value) : base(name, value) { }
-
-        public override bool IsComplete() => false;
-        public override void RecordEvent() { }
-    }
-
-    // Class for checklist goals
-    public class ChecklistGoal : Goal
-    {
-        public int Target { get; set; }
-        public int CompletedCount { get; private set; }
-
-
-        public ChecklistGoal(string name, int value, int target) : base(name, value)
-        {
-            this.Target = target;
-            this.CompletedCount = 0;
-        }
-
-        public override bool IsComplete() => CompletedCount >= Target;
-
-        public override void RecordEvent()
-        {
-            if (!IsComplete())
-            {
-                CompletedCount++;
-            }
-        }
-    }
+    public abstract bool IsComplete();
+    public abstract int RecordEvent();
+    public abstract string GetDetailsString();
+    public abstract string GetStringRepresentation();
 }

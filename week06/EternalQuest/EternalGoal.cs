@@ -1,12 +1,21 @@
-using System;
+public class EternalGoal : Goal
+{
+    public EternalGoal(string name, string description, int value) : base(name, description, value) { }
 
-namespace EternalQuest
-{ 
-    public class EternalGoalNew : Goal
+    public override bool IsComplete() => false;
+
+    public override int RecordEvent()
     {
-        public EternalGoalNew(string name, int value) : base(name, value) { }
+        return Value;
+    }
 
-        public override bool IsComplete() => false;
-        public override void RecordEvent() { }
+    public override string GetDetailsString()
+    {
+        return $"[ ] {Name} ({Description})";
+    }
+
+    public override string GetStringRepresentation()
+    {
+        return $"EternalGoal:{Name},{Description},{Value}";
     }
 }
