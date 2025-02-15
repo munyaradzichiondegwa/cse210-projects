@@ -45,10 +45,11 @@ namespace EternalQuest
         public int Target { get; set; }
         public int CompletedCount { get; private set; }
 
+
         public ChecklistGoal(string name, int value, int target) : base(name, value)
         {
-            Target = target;
-            CompletedCount = 0;
+            this.Target = target;
+            this.CompletedCount = 0;
         }
 
         public override bool IsComplete() => CompletedCount >= Target;
