@@ -2,23 +2,40 @@ using System;
 
 public class Activity
 {
-    public string Name { get; set; }
-    public DateTime Date { get; set; }
-    public TimeSpan Duration { get; set; }
-    public string Location { get; set; }
-    public string Description { get; set; }
+    // Private member variables
+    private DateTime _date;
+    private int _lenthMinutes;
 
-    public Activity(string name, DateTime date, TimeSpan duration, string location, string description)
+    // Constructor
+    public Activity(DateTime date, int lengthMinutes)
     {
-        Name = name;
-        Date = date;
-        Duration = duration;
-        Location = location;
-        Description = description;
+        _date = date;
+        _lenthMinutes = lengthMinutes;
     }
 
-    public override string ToString()
+    // Getters for private members
+    public DateTime Date => _date;
+    public int LengthMinutes => _lenthMinutes;
+
+    // Virtual method to be overridden by derived classes
+    public virtual double GetDistance()
     {
-        return $"{Name} on {Date.ToShortDateString()} at {Location}";
+        return 0;
+    }
+
+    public virtual double GetSpeed()
+    {
+        return 0;
+    }
+
+    public virtual double GetPace()
+    {
+        return 0;
+    }
+
+    // GetSummary method eith virtusl implementation
+    public virtual string GetSummary()
+    {
+        return $"{_date.ToString("dd MM yyyy")} Unknown Activity ({_lenthMinutes} min.)";
     }
 }
