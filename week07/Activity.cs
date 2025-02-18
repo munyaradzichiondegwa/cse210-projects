@@ -1,41 +1,18 @@
-using System;
+using System; 
 
-public class Activity
+namespace ExerciseTracking
 {
-    // Private member variables
-    private DateTime _date;
-    private int _lenthMinutes;
-
-    // Constructor
-    public Activity(DateTime date, int lengthMinutes)
+    public abstract class Activity
     {
-        _date = date;
-        _lenthMinutes = lengthMinutes;
-    }
+        public DateTime Date { get; set; }
+        public int Duration { get; set; } // in minutes
 
-    // Getters for private members
-    public DateTime Date => _date;
-    public int LengthMinutes => _lenthMinutes;
+        protected Activity(DateTime date, int duration)
+        {
+            Date = date;
+            Duration = duration;
+        }
 
-    // Virtual method to be overridden by derived classes
-    public virtual double GetDistance()
-    {
-        return 0;
-    }
-
-    public virtual double GetSpeed()
-    {
-        return 0;
-    }
-
-    public virtual double GetPace()
-    {
-        return 0;
-    }
-
-    // GetSummary method eith virtusl implementation
-    public virtual string GetSummary()
-    {
-        return $"{_date.ToString("dd MM yyyy")} Unknown Activity ({_lenthMinutes} min.)";
+        public abstract string GetSummary();
     }
 }

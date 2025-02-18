@@ -1,38 +1,19 @@
 using System;
 
-public class Running : Activity
+namespace ExerciseTracking
 {
-    // Private member variables
-    private double _distance;
-
-    // Constructor
-    public Running(DateTime date, int lengthMinutes, double distance) : base(date, lengthMinutes)
+    public class Running : Activity
     {
-        _distance = distance;
-    }
+        public double Distance { get; } // Distance in miles
 
-    // Overide methods for Running-specific calculations
-    public override double GetDistance()
-    {
-        return _distance;
-    }
+        public Running(DateTime date, int duration, double distance) : base(date, duration)
+        {
+            Distance = distance;
+        }
 
-    public override double GetSpeed()
-    {
-        return _distance / LengthMinutes * 60;
-    }
-
-    public override double GetPace()
-    {
-        return LengthMinutes / _distance;
-    }
-
-    // Override GetSummary for Running
-    public override string GetSummary()
-    {
-        return $"{Date.ToString("dd MM yyyy")} Running ({LengthMinutes} min.)-" +
-               $"Distance {GetDistance():0.1f} miles, " +
-               $"Speed {GetSpeed():0.1f} mph, " +
-               $"Pace: {GetPace():0.1f} min/mile";
+        public override string GetSummary()
+        {
+            return $"Running on {Date.ToShortDateString()}: Duration {Duration} minutes, Distance {Distance} miles";
+        }
     }
 }
