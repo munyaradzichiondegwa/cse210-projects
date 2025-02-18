@@ -3,29 +3,21 @@ using System.Collections.Generic;
 
 namespace ExerciseTracking
 {
-     class Program
+    class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
-            var activities = new List<Activity>
+            List<Activity> activities = new List<Activity>
             {
-                new Running(new DateTime(2021, 10, 1), 30, 3.5),
-                new Cycling(new DateTime(2021, 10, 2), 45, 15.5),
-                new Swimming(new DateTime(2021, 10, 3), 60, 40)
+                new Running(new DateTime(2021, 3, 1), 30, 3.5),
+                new Cycling(new DateTime(2021, 3, 2), 45, 15.5),
+                new Swimming(new DateTime(2021, 3, 3), 60, 20)
             };
 
-            foreach (var activity in activities)
+            foreach (Activity activity in activities)
             {
                 Console.WriteLine(activity.GetSummary());
             }
         }
     }
-
 }
-
-
-
-
-
-
-
